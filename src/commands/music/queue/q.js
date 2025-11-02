@@ -94,19 +94,25 @@ class QueueCommand extends Command {
 
     const premiumStatus = this._getPremiumStatus(guildId, userId);
     const queueStatus = premiumStatus.hasPremium
-      ? `Premium Queue (${tracks.length}/${premiumStatus.maxSongs})`
-      : `Free Queue (${tracks.length}/${premiumStatus.maxSongs})`;
+      ? `👑 Premium Queue (${tracks.length}/${premiumStatus.maxSongs})`
+      : `🎵 Free Queue (${tracks.length}/${premiumStatus.maxSongs})`;
+
+    // Calculate queue stats
+    const totalDuration = tracks.reduce((acc, t) => acc + (t.info.duration || 0), 0);
+    const loopMode = player.repeatMode === "track" ? "🔂 Track" : player.repeatMode === "queue" ? "🔁 Queue" : "➡️ Off";
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`### Music Queue`),
+      new TextDisplayBuilder().setContent(`### 🎶 Music Queue`),
     );
 
     container.addSectionComponents(
       new SectionBuilder()
         .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(`**Now Playing**`),
+          new TextDisplayBuilder().setContent(`**🎵 Now Playing**`),
           new TextDisplayBuilder().setContent(
-            `[${current.info.title}](${current.info.uri}) - \`${this._formatDuration(current.info.duration)}\``,
+            `[${current.info.title}](${current.info.uri})\n` +
+            `👤 ${current.info.author || "Unknown"} • ⏱️ \`${this._formatDuration(current.info.duration)}\`\n` +
+            `📢 Requested by ${current.requester ? `<@${current.requester.id}>` : "Unknown"}`,
           ),
         )
         .setThumbnailAccessory(
@@ -120,7 +126,7 @@ class QueueCommand extends Command {
     );
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`*${queueStatus}*`),
+      new TextDisplayBuilder().setContent(`${queueStatus} • Loop: ${loopMode} • Total: \`${this._formatDuration(totalDuration)}\``),
     );
     container.addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Large),
@@ -134,8 +140,8 @@ class QueueCommand extends Command {
       );
 
       const upNextText = premiumStatus.hasPremium
-        ? `**Up Next** (${tracks.length} track${tracks.length > 1 ? "s" : ""} | Premium)`
-        : `**Up Next** (${tracks.length} track${tracks.length > 1 ? "s" : ""} | Upgrade for ${config.queue.maxSongs.premium} song limit)`;
+        ? `**📋 Up Next** (${tracks.length} track${tracks.length > 1 ? "s" : ""} • 👑 Premium)`
+        : `**📋 Up Next** (${tracks.length} track${tracks.length > 1 ? "s" : ""} • Upgrade for ${config.queue.maxSongs.premium} songs)`;
 
       container.addTextDisplayComponents(
         new TextDisplayBuilder().setContent(upNextText),
@@ -143,11 +149,12 @@ class QueueCommand extends Command {
 
       paginatedTracks.forEach((track, index) => {
         const trueIndex = startIndex + index;
+        const emoji = trueIndex === 0 ? "🔜" : trueIndex === 1 ? "⏭️" : "▫️";
         container.addSectionComponents(
           new SectionBuilder()
             .addTextDisplayComponents(
               new TextDisplayBuilder().setContent(
-                `**${trueIndex + 1}.** [${track.info.title}](${track.info.uri})`,
+                `${emoji} **${trueIndex + 1}.** [${track.info.title}](${track.info.uri})`,
               ),
               new TextDisplayBuilder().setContent(
                 `*Added by ${track.requester?.username || "Unknown"} | ${this._formatDuration(track.info.duration)}*`,

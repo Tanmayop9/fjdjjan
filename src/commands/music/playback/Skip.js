@@ -75,6 +75,27 @@ class SkipCommand extends Command {
 	async _handleSkip(client, context, pm, amount) {
 		const queueSize = pm.queueSize;
 		const skippedTrack = pm.currentTrack;
+		const guild = context.guild;
+		const voiceChannel = guild?.members.cache.get(context.user?.id || context.author?.id)?.voice.channel;
+		
+		// Vote skip feature for multiple listeners
+		if (voiceChannel && voiceChannel.members.size > 2) {
+			const requiredVotes = Math.ceil(voiceChannel.members.filter(m => !m.user.bot).size / 2);
+			const currentVotes = pm.get('skipVotes') || new Set();
+			const userId = context.user?.id || context.author?.id;
+			
+			currentVotes.add(userId);
+			pm.set('skipVotes', currentVotes);
+			
+			if (currentVotes.size < requiredVotes) {
+				return this._reply(
+					context,
+					this._createVoteSkipContainer(currentVotes.size, requiredVotes, skippedTrack)
+				);
+			}
+			// Clear votes after successful skip
+			pm.set('skipVotes', new Set());
+		}
 
 		if (amount > queueSize + 1) {
 			return this._reply(
@@ -143,6 +164,51 @@ class SkipCommand extends Command {
 		if (message && hasQueue) {
 			this._setupCollector(message, client, pm.guildId);
 		}
+	}
+
+	_createVoteSkipContainer(currentVotes, requiredVotes, track) {
+		const container = new ContainerBuilder();
+
+		container.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(
+				`${emoji.get("music")} **Vote to Skip**`
+			)
+		);
+
+		container.addSeparatorComponents(
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+		);
+
+		const progressBar = this._createProgressBar(currentVotes, requiredVotes);
+		const content =
+			`**Vote Progress**\n\n` +
+			`${progressBar}\n` +
+			`**${currentVotes}/${requiredVotes}** votes needed to skip\n\n` +
+			`**Currently Playing**\n` +
+			`├─ **${emoji.get("music")} Title:** ${track.info.title}\n` +
+			`├─ **${emoji.get("folder")} Artist:** ${track.info.author || "Unknown"}\n` +
+			`└─ **${emoji.get("info")} Duration:** ${this._formatDuration(track.info.duration)}\n\n` +
+			`*Use the skip command to add your vote!*`;
+
+		container.addSectionComponents(
+			new SectionBuilder()
+				.addTextDisplayComponents(
+					new TextDisplayBuilder().setContent(content)
+				)
+				.setThumbnailAccessory(
+					new ThumbnailBuilder().setURL(
+						track.info.artworkUrl || config.assets.defaultTrackArtwork
+					)
+				)
+		);
+
+		return container;
+	}
+
+	_createProgressBar(current, required, length = 10) {
+		const filled = Math.round((current / required) * length);
+		const empty = length - filled;
+		return `[${"▰".repeat(filled)}${"▱".repeat(empty)}]`;
 	}
 
 	_createSuccessContainer(skipped, current, amount) {

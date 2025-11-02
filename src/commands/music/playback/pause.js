@@ -47,7 +47,7 @@ class PauseCommand extends Command {
 
   async _handlePause(context, pm) {
     if (pm.isPaused) {
-      return this._reply(context, this._createErrorContainer('The player is already paused.'));
+      return this._reply(context, this._createErrorContainer('⏸️ The player is already paused.'));
     }
 
     await pm.pause();
@@ -56,19 +56,25 @@ class PauseCommand extends Command {
     const { currentTrack } = pm;
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`${emoji.get('music')} **Player Paused**`)
+      new TextDisplayBuilder().setContent(`${emoji.get('music')} **⏸️ Player Paused**`)
     );
 
     container.addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
     );
 
-    const content = `**Track Information**\n\n` +
+    const progress = pm.position || 0;
+    const duration = currentTrack.info.duration || 0;
+    const progressBar = this._createProgressBar(progress, duration);
+    
+    const content = `**🎵 Track Information**\n\n` +
       `├─ **${emoji.get('music')} Title:** ${currentTrack.info.title}\n` +
       `├─ **${emoji.get('folder')} Artist:** ${currentTrack.info.author || 'Unknown'}\n` +
       `├─ **${emoji.get('info')} Duration:** ${this._formatDuration(currentTrack.info.duration)}\n` +
-      `└─ **${emoji.get('check')} Status:** Playback paused\n\n` +
-      `*Track has been paused successfully*`;
+      `├─ **⏱️ Progress:** ${this._formatDuration(progress)} / ${this._formatDuration(duration)}\n` +
+      `└─ ${progressBar}\n\n` +
+      `**⏸️ Status:** Playback paused\n` +
+      `*Use resume to continue playback*`;
 
     container.addSectionComponents(
       new SectionBuilder()
@@ -81,6 +87,13 @@ class PauseCommand extends Command {
     );
 
     return this._reply(context, container);
+  }
+
+  _createProgressBar(current, total, length = 15) {
+    if (!total || total <= 0) return "━━━━━━━━━━━━━━━";
+    const filled = Math.round((current / total) * length);
+    const empty = length - filled;
+    return `${"━".repeat(Math.max(0, filled))}🔘${"━".repeat(Math.max(0, empty - 1))}`;
   }
 
   _formatDuration(ms) {

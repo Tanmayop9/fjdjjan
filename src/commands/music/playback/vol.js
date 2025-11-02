@@ -84,16 +84,25 @@ class VolumeCommand extends Command {
   _buildVolumeContainer(pm) {
     const container = new ContainerBuilder();
     const volume = pm.volume;
-    const barLength = 15;
+    const barLength = 20;
     const filledBlocks = Math.round((volume / 150) * barLength);
     const emptyBlocks = barLength - filledBlocks;
-    const volumeBar = "█".repeat(filledBlocks) + "▒".repeat(emptyBlocks);
+    
+    // Better visual volume bar with emoji
+    const volumeBar = `${"▰".repeat(filledBlocks)}${"▱".repeat(emptyBlocks)}`;
+    
+    // Dynamic volume emoji based on level
+    const volumeEmoji = volume === 0 ? "🔇" : volume < 30 ? "🔈" : volume < 70 ? "🔉" : "🔊";
+    
+    // Volume status text
+    const volumeStatus = volume === 0 ? "Muted" : volume < 30 ? "Low" : volume < 70 ? "Medium" : volume < 100 ? "High" : "Boosted";
+    
     const artworkUrl =
       pm.currentTrack?.info?.artworkUrl || config.assets.defaultTrackArtwork;
 
     container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `${emoji.get("music")} **Volume Control**`,
+        `${volumeEmoji} **Volume Control Panel**`,
       ),
     );
 
@@ -102,12 +111,13 @@ class VolumeCommand extends Command {
     );
 
     const content =
-      `**Current Settings**\n\n` +
-      `├─ **${emoji.get("info")} Volume Level:** ${volume}%\n` +
-      `├─ **${emoji.get("check")} Status:** ${volume === 0 ? "Muted" : "Active"}\n` +
-      `├─ **${emoji.get("folder")} Range:** 0% - 150%\n` +
-      `└─ **${emoji.get("reset")} Visual:** \`${volumeBar}\`\n\n` +
-      `*Use the buttons below to adjust volume*`;
+      `**📊 Current Audio Settings**\n\n` +
+      `${volumeBar}\n\n` +
+      `├─ **${volumeEmoji} Level:** ${volume}% / 150%\n` +
+      `├─ **📈 Status:** ${volumeStatus}\n` +
+      `├─ **🎚️ Range:** 0% (Silent) - 150% (Max Boost)\n` +
+      `└─ **💡 Quality:** ${volume > 100 ? "⚠️ Boosted (may distort)" : "✨ Clear & pristine"}\n\n` +
+      `*Use the quick adjustment buttons below!*`;
 
     container.addSectionComponents(
       new SectionBuilder()

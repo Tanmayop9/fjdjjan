@@ -115,9 +115,26 @@ class NightcoreFilterCommand extends Command {
 	_createSuccessContainer(filterName) {
 		const container = new ContainerBuilder();
 
+		const filterEmojis = {
+			"Nightcore": "🌙✨",
+			"Bassboost": "🔊💥",
+			"Vaporwave": "🌴💜",
+			"Gaming": "🎮🔥"
+		};
+
+		const filterDescriptions = {
+			"Nightcore": "High-pitched, fast-paced anime vibes activated!",
+			"Bassboost": "Deep bass thumping enhanced for maximum impact!",
+			"Vaporwave": "Slowed, reverbed aesthetic soundscape enabled!",
+			"Gaming": "Optimized audio for immersive gaming experience!"
+		};
+
+		const emoji = filterEmojis[filterName] || "🎛️";
+		const description = filterDescriptions[filterName] || "Audio filter has been successfully applied!";
+
 		container.addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(
-				`${emoji.get("music")} **Filter Applied**`,
+				`${emoji} **${filterName} Filter Applied**`,
 			),
 		);
 
@@ -126,11 +143,13 @@ class NightcoreFilterCommand extends Command {
 		);
 
 		const content =
-			`**Filter Information**\n\n` +
-			`├─ **${emoji.get("music")} Filter:** ${filterName} Equalizer\n` +
-			`├─ **${emoji.get("check")} Status:** Applied successfully\n` +
-			`└─ **${emoji.get("info")} Effect:** Enhanced for nightcore music\n\n` +
-			`*Filter has been applied to the current playback*`;
+			`**✨ ${description}**\n\n` +
+			`🎛️ **Filter Details:**\n` +
+			`├─ **Type:** ${filterName} Equalizer\n` +
+			`├─ **Status:** ✅ Active\n` +
+			`├─ **Effect:** Enhanced audio profile\n` +
+			`└─ **Quality:** High-fidelity processing\n\n` +
+			`💡 *Tip: Use \`reset\` command to clear all filters*`;
 
 		container.addSectionComponents(
 			new SectionBuilder()

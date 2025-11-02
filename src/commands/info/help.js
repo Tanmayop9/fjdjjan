@@ -393,9 +393,21 @@ class HelpCommand extends Command {
 
       const container = new ContainerBuilder();
 
+      // Category emojis for better visual appeal
+      const categoryEmojis = {
+        "music": "🎵",
+        "filters": "🎛️",
+        "playlists": "📋",
+        "info": "ℹ️",
+        "settings": "⚙️",
+        "premium": "👑",
+        "Spotify": "🟢",
+        "developer": "🔧"
+      };
+
       container.addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          `${emoji.get("info")} **Help Menu**`,
+          `${emoji.get("info")} **🎶 Help & Commands Menu**`,
         ),
       );
 
@@ -403,13 +415,13 @@ class HelpCommand extends Command {
         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
       );
 
-      let content = `**Bot Command Information**\n\n`;
-      content += `┌─ **${emoji.get("info")} Statistics**\n`;
-      content += `├─ Prefix Commands: ${uniqueCommands.length}\n`;
-      content += `├─ Slash Commands: ${slashCommands.length}\n`;
-      content += `└─ Categories: ${categoryArray.length}\n\n`;
+      let content = `**📊 Bot Statistics**\n\n`;
+      content += `┌─ **📝 Total Commands:** ${uniqueCommands.length}\n`;
+      content += `├─ **⚡ Slash Commands:** ${slashCommands.length}\n`;
+      content += `├─ **📂 Categories:** ${categoryArray.length}\n`;
+      content += `└─ **🎵 Music Features:** Advanced Lavalink integration\n\n`;
 
-      content += `**Available Categories:**\n`;
+      content += `**📂 Command Categories:**\n\n`;
 
       categoryArray.forEach((category, index) => {
         const isLast = index === categoryArray.length - 1;
@@ -417,11 +429,12 @@ class HelpCommand extends Command {
         const categoryCommands = categories.get(category) || [];
         const subcats = subcategories.get(category);
         const subcatCount = subcats ? subcats.size : 0;
+        const emojiIcon = categoryEmojis[category] || "📌";
         const info = subcatCount > 0 
           ? `${categoryCommands.length} commands, ${subcatCount} subcategories`
           : `${categoryCommands.length} commands`;
 
-        content += `${prefix} **${emoji.get("folder")} ${this._capitalize(category)}** (${info})\n`;
+        content += `${prefix} ${emojiIcon} **${this._capitalize(category)}** • ${info}\n`;
       });
 
       const section = new SectionBuilder()
