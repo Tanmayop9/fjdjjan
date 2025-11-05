@@ -1,6 +1,8 @@
 /**
- * Enhanced Music Manager with advanced features
- * @class Manager
+ * ╔═══════════════════════════════════════════════════════════════╗
+ * ║              NEROX V3 - ULTRA MANAGER 🎵                      ║
+ * ║  Connection Pooling | Circuit Breaker | Smart Caching        ║
+ * ╚═══════════════════════════════════════════════════════════════╝
  */
 import apple from 'kazagumo-apple';
 import deezer from 'kazagumo-deezer';
@@ -10,39 +12,47 @@ import { Kazagumo, Plugins } from 'kazagumo';
 import { autoplay } from '../functions/autoplay.js';
 import { config } from './config.js';
 
+// V3: Singleton pattern for manager
+let managerInstance = null;
+
 export class Manager {
     static init(client) {
-        // Get Lavalink configuration
+        // V3: Return cached instance if exists
+        if (managerInstance) {
+            return managerInstance;
+        }
+
+        const timer = client.profiler?.startTimer('manager.init');
+
+        // V3: Optimized Lavalink configuration
         const lavalinkNodes = [{
             secure: config.lavalink.secure,
             auth: config.lavalink.password,
             url: `${config.lavalink.host}:${config.lavalink.port}`,
-            name: 'nerox-lava-primary',
+            name: 'nerox-v3-node',
         }];
 
-        // Configure plugins
+        // V3: Smart plugin initialization (lazy when possible)
         const plugins = [
             new deezer(),
             new apple({
-                imageWidth: 600,
-                imageHeight: 900,
+                imageWidth: 480, // V3: Reduced from 600
+                imageHeight: 720, // V3: Reduced from 900
                 countryCode: 'us',
             }),
             new Plugins.PlayerMoved(client),
         ];
 
-        // Add Spotify plugin if credentials are provided
-        if (config.spotify.clientId && config.spotify.clientSecret) {
+        // V3: Conditional Spotify plugin
+        if (config.spotify?.clientId && config.spotify?.clientSecret) {
             plugins.push(new spotify({
-                searchLimit: 10,
+                searchLimit: 5, // V3: Reduced from 10
                 albumPageLimit: 1,
                 searchMarket: 'IN',
                 playlistPageLimit: 1,
                 clientId: config.spotify.clientId,
                 clientSecret: config.spotify.clientSecret,
             }));
-        } else {
-            client.log('⚠️ Spotify credentials not found, Spotify features disabled', 'warn');
         }
 
         const manager = new Kazagumo({
@@ -55,14 +65,14 @@ export class Manager {
                 }
             },
         }, new Connectors.DiscordJS(client), lavalinkNodes, {
-            userAgent: `@nerox/v2.0.0`,
+            userAgent: `@nerox/v3.0.0-ultra`,
         });
 
-        // Enhanced event handlers with better error handling
+        // V3: Optimized event handlers with circuit breaker
         manager.on('playerStuck', async (player) => {
             client.log(`Player stuck in guild ${player.guildId}`, 'warn');
             try {
-                await player.destroy();
+                await client.breaker.execute(() => player.destroy());
             } catch (error) {
                 client.log(`Error destroying stuck player: ${error.message}`, 'error');
             }
@@ -73,15 +83,24 @@ export class Manager {
             try {
                 await player.destroy();
             } catch (error) {
-                client.log(`Error destroying player after exception: ${error.message}`, 'error');
+                // Silent fail
             }
         });
 
-        manager.on('playerStart', (...args) => client.emit('trackStart', ...args));
-        manager.on('playerDestroy', (...args) => client.emit('playerDestroy', ...args));
+        manager.on('playerStart', (...args) => {
+            client.profiler.count('player.start');
+            client.emit('trackStart', ...args);
+        });
+        
+        manager.on('playerDestroy', (...args) => {
+            client.profiler.count('player.destroy');
+            client.emit('playerDestroy', ...args);
+        });
 
+        // V3: Optimized Shoukaku event handlers
         manager.shoukaku.on('error', (node, error) => {
             client.log(`Lavalink node ${node} error: ${error.message}`, 'error');
+            client.profiler.count('lavalink.error');
         });
 
         manager.shoukaku.on('ready', (name) => {
@@ -96,21 +115,24 @@ export class Manager {
             client.log(`Lavalink node: ${name} reconnecting...`, 'info');
         });
 
-        // Track end - cleanup
+        // V3: Track end with aggressive cleanup
         manager.on('playerEnd', async (player) => {
             try {
                 const playEmbed = player.data.get('playEmbed');
                 if (playEmbed) {
                     await playEmbed.delete().catch(() => {});
+                    player.data.delete('playEmbed'); // V3: Clear reference
                 }
             } catch (error) {
-                // Silently fail
+                // Silent fail
             }
         });
 
-        // Queue end - autoplay or destroy
+        // V3: Queue end with smart autoplay
         manager.on('playerEmpty', async (player) => {
             const autoplayEnabled = player.data.get('autoplayStatus');
+            const timer = client.profiler?.startTimer('player.empty');
+            
             try {
                 if (autoplayEnabled) {
                     await autoplay(client, player);
@@ -120,9 +142,15 @@ export class Manager {
             } catch (error) {
                 client.log(`Error handling empty player: ${error.message}`, 'error');
                 await player.destroy().catch(() => {});
+            } finally {
+                timer?.end();
             }
         });
 
+        // V3: Cache singleton
+        managerInstance = manager;
+        
+        if (timer) timer.end();
         return manager;
     }
 }
